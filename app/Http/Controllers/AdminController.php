@@ -16,6 +16,8 @@ use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Requests\LoginRequest;
 use App\Http\Responses\LoginResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -64,6 +66,65 @@ class AdminController extends Controller
             return app(LoginResponse::class);
         });
     }
+
+    public function adminProfile(){
+        $admin = Auth::user();
+        return view('admin.profile.view_profile', compact('admin'));
+    }
+
+    public function adminProfileEdit(){
+        $admin = Auth::guard('admin')->user();
+        return view('admin.profile.view_profile_edit', compact('admin'));
+    }
+
+    public function adminProfileStore(Request $request){
+        $admin = Auth::guard('admin')->user();
+        $admin->name = $request->name;
+        $admin->email = $request->email;
+        if($request->file('profile_photo_path')){
+            $file = $request->file('profile_photo_path');
+            @unlink(public_path('uploads/admin_images/'.$admin->profile_photo_path));
+            $filename = date('YmdHi').$file->getClientOriginalName();
+            $file->move(public_path('uploads/admin_images'),$filename);
+            $admin->profile_photo_path = $filename;
+        }
+        $admin->save();
+
+        $notification = array(
+            'message' => 'Admin Profile Updated Successfully',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->route('admin.profile')->with($notification);
+    }
+
+    public function adminPasswordView(){
+        return view('admin.password.edit_password');
+    }
+
+    public function adminPasswordUpdate(Request $request){
+        $validteData = $request->validate([
+            'oldpassword' => 'required',
+            'password' => 'required:confirmed'
+        ]);
+
+        $hashedPassword = Auth::guard('admin')->user()->password;
+
+        if(Hash::check($request->oldpassword, $hashedPassword)){
+            $admin = Auth::guard('admin')->user();
+            $admin->password = Hash::make($request->password);
+            $admin->save();
+            Auth::guard('admin')->logout();
+            return redirect()->route('admin.login');
+        }else{
+            $notification = array(
+                'message' => 'Something went wrong.',
+                'alert-type' => 'error'
+            );
+            return redirect()->back()->with($notification);
+        }
+    }
+
 
     /**
      * Get the authentication pipeline instance.
