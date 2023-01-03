@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MainUserController;
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('test/exception/{txt}',[TestController::class, 'exceptionTest']);
+
 
 // Route::group(['prefix'=>'admin','middleware'=>['admin:admin']],function(){
 //     Route::get('/login',[AdminController::class, 'loginForm']);
